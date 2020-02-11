@@ -1,3 +1,6 @@
+GAM300/350 project on team Turboclock. This repo represents code snippits I've contributed towards the project.
+This project is currently under development. As a result, this snippet is from a previous milestone our team reached. Expect this repository to update as the project develops. 
+
 **AISystem.cpp**
 - contains snippets from the original file showing off the specific behaviors for a Combat Behavior Tree.
 - Contains a simple AStar algorithm that uses navigation data generated from Recast/Detour to find and generate a path. Currently under development
