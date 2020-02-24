@@ -4,76 +4,11 @@ namespace demo3
   {
     Vector3 goal;
 
-    MoveTo()
-    {
-    }
-    ~MoveTo() override
-    {
-    }
-
-    
-
-    virtual void on_init(BehaviorTickData d) override
-    {
-    }
-
-    virtual void on_terminate(Status) override
-    {
-    }
-
-
     virtual Status update(BehaviorTickData d)
     {
       Gameplay::MovementComponent *mc= d.world_.comp_get<Gameplay::MovementComponent>(d.entity_);
       TankMovement *tankMC = reinterpret_cast<TankMovement*>(mc->controller_.get());
       Transform *tc= d.world_.comp_get<Transform>(d.entity_);
-#if 0
-      PhysicsBody *physics= d.world_.comp_get<PhysicsBody>(d.entity_);
-      //grab movement component of controlled entity
-      const Vector3 pos = tc->position();
-      //fail if no movement
-      if(!mc || !mc->controller_)
-      {
-        return Status::Failed;
-      }
-      Vector3 velocity = physics->velocity();
-      Float currSpeed = velocity.Length();
-      Float maxSpeed = tankMC->max_speed();
-
-      Vector3 target_offset = goal - pos;
-      Float distance = target_offset.Length();
-      Float ramped_speed = maxSpeed * (distance / 30.f);
-      Float clipped_speed = std::min(ramped_speed, maxSpeed);
-      Float ratio = clipped_speed / maxSpeed;
-      Vector3 desired_velocity = (clipped_speed / distance) * target_offset;
-      Vector3 steering = desired_velocity - velocity;
-      if (distance < 5.f)
-      {
-        return Status::Success;
-      }
-
-      target_offset.y = 0;
-      target_offset.Normalize();
-      Vector3 control = Vector3::TransformNormal(target_offset, tc->transform().Invert()) * ratio;
-
-      velocity.y = 0;
-      velocity.Normalize();
-      Vector3 percVelocity = Vector3::TransformNormal(velocity, tc->transform().Invert());
-
-      ImGui::Begin("bob");
-      ImGui::Text("control: %f %f %f", control.x, control.y, control.z);
-      ImGui::Text("percVelocity: %f %f %f", percVelocity.x, percVelocity.y, percVelocity.z);
-      ImGui::Text("currSpeed: %f", currSpeed);
-      ImGui::Text("ratio: %f", ratio);
-      ImGui::Text("ramped_speed: %f", ramped_speed);
-      ImGui::Text("clipped_speed: %f", clipped_speed);
-      ImGui::Text("steering: %f %f %f", steering.x, steering.y, steering.z);
-      ImGui::Text("velocity: %f %f %f", velocity.x, velocity.y, velocity.z);
-      ImGui::End();
-
-      //physics->velocity(velocity + steering);
-      mc->controller_->set_input(control.x, control.z);
-#endif
 #if 1
       const Vector3 pos = tc->position();
       Vector4 start = pos;
@@ -127,55 +62,8 @@ namespace demo3
       control.Normalize();
       control.z *= -1;
 
-#if 0//arrival steering
-      Vector3 target_offset = goal - pos;
-      Float distance = target_offset.Length();
-      Float ramped_speed = maxSpeed * (distance / (currSpeed ));
-      Float clipped_speed = std::min(ramped_speed, maxSpeed);
-      //Float ratio = (ramped_speed / maxSpeed);
-      //Float magnitude = currSpeed / maxSpeed;
-      Vector3 desired_velocity = (clipped_speed / distance) * target_offset;
-      Vector3 steering = desired_velocity - velocity;
 
-      Vector3 finalVel = velocity + steering;
-      Float finalSpeed = finalVel.Length();
-      finalVel.Normalize();
-
-      finalVel += avoidance;
-      finalVel.Normalize();
-
-
-      Vector3 control2 = Vector3::TransformNormal(finalVel, tc->transform().Invert());
-      control2.Normalize();
-      control2.z *= -1.f;
-      control2 *= ((finalSpeed / maxSpeed) * 2.f - 1.f);
-#endif
-      //ImGui::Begin("bob");
-      //ImGui::Text("ratio: %f", ratio);
-      //ImGui::Text("magnitude: %f", magnitude);
-      //ImGui::Text("control: %f %f %f -- %f", control.x, control.y, control.z, control.Length());
-      //ImGui::Text("control2: %f %f %f -- %f", control2.x, control2.y, control2.z, control2.Length());
-      //ImGui::Text("currSpeed: %f", currSpeed);
-      //ImGui::Text("finalSpeed: %f", finalSpeed);
-      //ImGui::Text("ramped_speed: %f", ramped_speed);
-      //ImGui::Text("clipped_speed: %f", clipped_speed);
-      //ImGui::Text("velocity: %f %f %f", velocity.x, velocity.y, velocity.z);
-      //ImGui::Text("finalVel: %f %f %f", finalVel.x, finalVel.y, finalVel.z);
-      //ImGui::End();
-
-
-
-      //velocity.y = 0.f;
-      //steering.y = 0.f;
-      //physics->velocity(velocity + steering);
-      //mc->controller_->set_input(control2.x, control2.z);
       mc->controller_->set_input(control.x, control.z);
-      //startRotation_ = tc->rotation();
-      //Matrix l = Matrix::CreateLookAt(myPos, enemyPos, Vector3(0.f, 1.f, 0.f));
-      //endRotation_ = Quaternion::CreateFromRotationMatrix(l.Invert());
-      //mc->controller_->rotation(Quaternion::Slerp(startRotation_, endRotation_, time_ / timeToTurn_));
-#endif
-
 
 
       return Status::Running;
