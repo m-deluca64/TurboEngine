@@ -1,5 +1,6 @@
 namespace demo3
 {
+  //=======================================================================================================================
   struct MoveTo: public Behavior
   {
     Vector3 goal;
@@ -9,7 +10,7 @@ namespace demo3
       Gameplay::MovementComponent *mc= d.world_.comp_get<Gameplay::MovementComponent>(d.entity_);
       TankMovement *tankMC = reinterpret_cast<TankMovement*>(mc->controller_.get());
       Transform *tc= d.world_.comp_get<Transform>(d.entity_);
-#if 1
+      
       const Vector3 pos = tc->position();
       Vector4 start = pos;
       Vector4 end = pos + tc->transform().Forward() * 20.f;
@@ -70,7 +71,7 @@ namespace demo3
     }
     
   };
-
+  //=======================================================================================================================
   struct MoveToPath: public MoveTo
   {
     bool bAimTowardsGoal;
@@ -157,7 +158,7 @@ namespace demo3
       return s;
     }
   };
-  
+  //=======================================================================================================================
   struct FindWalkablePoint: public Behavior
   {
     Vector3 goalSearch_;
@@ -198,6 +199,7 @@ namespace demo3
       return Status::Failed;
     }
   };
+  //=======================================================================================================================
   struct FindRandomWalkablePoint: public Behavior
   {
     FindRandomWalkablePoint()
@@ -237,7 +239,7 @@ namespace demo3
       return Status::Failed;
     }
   };
-
+  //=======================================================================================================================
   struct FindPath: public Behavior
   {
     FindPath()
@@ -267,6 +269,7 @@ namespace demo3
       return Status::Success;
     }
   };
+  //=======================================================================================================================
   struct CanSeeTank: public Decorator
   {
   public:
@@ -364,6 +367,7 @@ namespace demo3
     }
   };
 
+  //=======================================================================================================================
   struct FacePlayer : public Behavior
   {
     Status update(BehaviorTickData d) override
@@ -395,6 +399,7 @@ namespace demo3
     {
     }
   };
+  //=======================================================================================================================
   struct FindPointAroundTarget: public Behavior
   {
     Status update(BehaviorTickData d) override
@@ -440,7 +445,7 @@ namespace demo3
     {
     }
   };
-
+  //=======================================================================================================================
   struct ObstacleAvoidance : public Behavior
   {
 
@@ -520,259 +525,3 @@ namespace demo3
   };
 
 };
-
-std::shared_ptr<Behavior> Turbo::Gameplay::AI::MakeCombatTree()
-{
-  auto selector = std::make_shared<ActiveSelector>();
-  auto shootAndMove= std::make_shared<Parallel>(Parallel::Policy::RequireOne, Parallel::Policy::RequireOne);
-  auto persuitNavigationSequence = std::make_shared<Sequence>();
-  persuitNavigationSequence->add_child(std::make_shared<demo3::FindPointAroundTarget>());
-  //sequence->add_child(std::make_shared<demo3::FindWalkablePoint>(Vector3(80, 0, 80)));
-  auto navmoveto = std::make_shared<demo3::MoveToPath>();
-  navmoveto->bAimTowardsGoal = false;
-  persuitNavigationSequence->add_child(navmoveto);
-  persuitNavigationSequence->add_child(std::make_shared<Utils::Wait>(2.f));
-
-  auto faceAndShoot = std::make_shared<Parallel>(Parallel::Policy::RequireOne, Parallel::Policy::RequireOne);
-  auto navigationSequence = std::make_shared<Sequence>();
-  auto shootSequence = std::make_shared<Sequence>();
-  auto facePlayer = std::make_shared<demo3::FacePlayer>();
-  auto randomShoot = std::make_shared<demo2::RandomShoot>();
-  faceAndShoot->add_child(facePlayer);
-  faceAndShoot->add_child(shootSequence);
-  shootSequence->add_child(randomShoot);
-  shootSequence->add_child(std::make_shared<Utils::Wait>(0.3f));
-
-  shootAndMove->add_child(faceAndShoot);
-  shootAndMove->add_child(persuitNavigationSequence);
-
-  selector->add_child(std::make_shared<demo3::CanSeeTank>(shootAndMove));
-  selector->add_child(navigationSequence);
-
-  //Find a random point and move to it
-  navigationSequence->add_child(std::make_shared<demo3::FindRandomWalkablePoint>());
-  //sequence->add_child(std::make_shared<demo3::FindWalkablePoint>(Vector3(80, 0, 80)));
-  navigationSequence->add_child(std::make_shared<demo3::MoveToPath>());
-  navigationSequence->add_child(std::make_shared<Utils::Wait>(2.f));
-
-  //find the starting point and return to it
-  navigationSequence->add_child(std::make_shared<demo3::FindWalkablePoint>());
-  navigationSequence->add_child(std::make_shared<demo3::MoveToPath>());
-  navigationSequence->add_child(std::make_shared<Utils::Wait>(2.f));
-
-  //Avoid obstacles at all times //Currently In Development, not quite working correctly
-  auto alwaysAvoid = std::make_shared<Parallel>(Parallel::Policy::RequireAll, Parallel::Policy::RequireAll);
-  //alwaysAvoid->add_child(std::make_shared<demo3::ObstacleAvoidance>());
-  alwaysAvoid->add_child(selector);
-  return alwaysAvoid;
-}
-
-Vector3 AISystem::get_poly_center(dtMeshTile const *tile, dtPoly const *poly)
-{
-  Vector3 center(0.f);
-  for (int j = 0, nj = (int)poly->vertCount; j < nj; ++j)
-  {
-    Float x1 = tile->verts[poly->verts[j] * 3 + 0];
-    Float y1 = tile->verts[poly->verts[j] * 3 + 1];
-    Float z1 = tile->verts[poly->verts[j] * 3 + 2];
-    center += Vector3(x1, y1, z1);
-  }
-
-  center /= poly->vertCount;
-
-  return center;
-}
-
-Array<dtPolyRef> AISystem::get_neighbors(dtMeshTile const *tile, dtPoly const *poly)
-{
-  Array<dtPolyRef> neighbors;
-  for (unsigned int i = poly->firstLink; i != DT_NULL_LINK; i = tile->links[i].next)
-  {
-    
-    dtPolyRef ref = tile->links[i].ref;
-    if (ref)
-    {
-      neighbors.push_back(tile->links[i].ref);
-    }
-  }
-  return neighbors;
-}
-
-//will read in any static entity from levelsystem and then add those meshes to the navmesh
-//if the entities change at runtime, then this needs to be recalled
-
-
-
-Array<Vector3> AISystem::find_path(const Vector3& start, const Vector3& goal)
-{
-  Array<Vector3> waypoints;
-  dtNavMesh const * navmesh = AISystem::instance()->navmesh();
-  if(!navmesh)
-  {
-    return waypoints;
-  }
-  dtNavMeshQuery query;
-  query.init(AISystem::instance()->navmesh(), 2400);
-  dtPoly const * startPoly;
-  dtMeshTile const * startTile;
-  Vector3 startPoint;
-  dtPoly const * goalPoly;
-  dtMeshTile const * goalTile;
-  Vector3 bounds(80.f);
-  Vector3 goalPoint;
-  dtPolyRef startRef;
-  dtPolyRef goalRef;
-  //grab goal points
-  //Grab the start and end points
-  {
-    Float box = 40.f;
-    Vector3 e(box);
-    dtQueryFilter filter;
-    dtStatus status = query.findNearestPoly(&start.x, &e.x, &filter, &startRef, &startPoint.x);
-    dtStatus status2 = query.findNearestPoly(&goal.x, &e.x, &filter, &goalRef, &goalPoint.x);
-    dtStatus status3 = AISystem::instance()->navmesh()->getTileAndPolyByRef(startRef, &startTile, &startPoly);
-    dtStatus status4 = AISystem::instance()->navmesh()->getTileAndPolyByRef(goalRef, &goalTile, &goalPoly);
-    if( dtStatusFailed(status) || 
-      dtStatusFailed(status2) || 
-      dtStatusFailed(status3) || 
-      dtStatusFailed(status4)
-      )
-    {
-      return waypoints;
-    }
-  }
-
-  int numPolys = 2000;
-  std::map<dtPolyRef, NodeState> nodeStates;
-  for(int i = 0; i < numPolys; i++)
-  {
-    nodeStates[i] = NodeState::Initialized;
-  }
-  //Uniform Cost Search
-  //node -> with State = problem.InitialState, Path-Cost=0
-  //openList -> priorityqueue<node> path-cost
-  //closed -> empty set
-  NodeQueue openlist;
-  Array<NavNode> closedList;
-  NavNode beginNode(startRef);
-  openlist.push(beginNode);
-  bool bSuccess = false;
-  while(!openlist.empty())
-  {
-    //if Empty?(open) return fail
-    //node = open.pop();
-    //if node == goal, return solution(node)
-    //node.state = explored
-    NavNode node = openlist.top();
-    openlist.pop();
-
-    nodeStates[node.poly_] = NodeState::Explored;
-    closedList.push_back(node);
-    if(node.poly_ == goalRef)
-    {
-      bSuccess = true;
-      break;
-    }
-
-    //for each action in problem.Actions(node.State) do
-    dtPoly const * poly;
-    dtMeshTile const * tile;
-    m_navMesh->getTileAndPolyByRefUnsafe(node.poly_, &tile, &poly);
-    Vector3 parentCenter = get_poly_center(tile, poly);
-    Array<dtPolyRef> neighbors = get_neighbors(tile, poly);
-    for(dtPolyRef neighbor : neighbors)
-    {
-      //child -> Child-Node(problem, node, action);
-      NavNode child(neighbor);
-      dtPoly const * childPoly;
-      dtMeshTile const * childTile;
-      m_navMesh->getTileAndPolyByRefUnsafe(child.poly_, &childTile, &childPoly);
-      Vector3 childCenter = get_poly_center(childTile, childPoly);
-
-      //h is the estimation from this node to the goal
-      //g is the known cost of parent's cost + distance from parent to child
-      switch(AISystem::instance()->path_algorithm())
-      {
-      case Heuristic::DIJKSTRA:
-        child.g_ = (parentCenter - childCenter).Length() + node.total_cost();
-        break;
-      case Heuristic::GREEDY:
-        child.h_ = (goalPoint - childCenter).Length();
-        break;
-      case Heuristic::ASTAR:
-        child.h_ = (goalPoint - childCenter).Length();
-        child.g_ = (parentCenter - childCenter).Length() + node.total_cost();
-        break;
-        
-      }
-      //child.h_ = (goalPoint - childCenter).Length();
-      //child.g_ = (parentCenter - childCenter).Length() + node.total_cost();
-
-      //if child.State is not in explored or frontier then
-        //frontier -> insert(child, frontier)
-      if(nodeStates[child.poly_] == NodeState::Initialized)
-      {
-        nodeStates[child.poly_] = NodeState::Frontier;
-        child.parentPoly_ = node.poly_;
-        openlist.push(child);
-      }
-      //else if child.State is in frontier with higher Path-Cost then
-        //replace that frontier node with child 
-      else if(nodeStates[child.poly_] == NodeState::Frontier)
-      {
-        child.parentPoly_ = node.poly_;
-        openlist.replace_if_cheaper(child);
-      }
-    }
-  }
-
-  debug_closed_list.clear();
-  debug_solution.clear();
-  debug_closed_list.insert(debug_closed_list.begin(), closedList.begin(), closedList.end());
-
-  NavNode node = closedList.back();
-  closedList.pop_back();
-  deque<NavNode> solution;
-  while(!closedList.empty())
-  {
-    if(closedList.back().poly_ == node.parentPoly_)
-    {
-      solution.push_front(closedList.back());
-      node = closedList.back();
-    }
-    closedList.pop_back();
-  }
-
-  debug_solution.clear();
-  //debug_solution.insert(debug_solution.begin(), solution.begin(), solution.end);
-
-
-  //Build the path from the solution found
-  for(NavNode node : solution)
-  {
-    debug_solution.push_back(node);
-    dtMeshTile const *tile;
-    dtPoly const *poly;
-    dtStatus status2 = AISystem::instance()->navmesh()->getTileAndPolyByRef(node.poly_, &tile, &poly);
-    Vector3 waypoint = AISystem::instance()->get_poly_center(tile, poly);
-    Vector3 hitPos;
-    Vector3 hitNormal;
-    Float distance;
-    dtStatus stat = query.findDistanceToWall(node.poly_, &waypoint.x, tile->header->walkableRadius, 0, &distance, &hitPos.x, &hitNormal.x);
-    if(dtStatusSucceed(stat))
-    {
-      waypoints.push_back(waypoint + (hitNormal * distance) * 0.5f);
-    }
-
-    waypoints.push_back(waypoint);
-  }
-  //add the goal to the end - this should be a point inside the goalRef found - or the best it could find
-  //if we succeeded, then we can add the goalpoint to the waypoints - otherwise its the last poly found
-  if(bSuccess && !waypoints.empty())
-  {
-    waypoints.erase(waypoints.begin()); //erase the beginning as we are already in that polygon
-    waypoints.push_back(goalPoint);
-  }
-
-  return waypoints;
-}
