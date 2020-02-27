@@ -1,4 +1,6 @@
-GAM300/350 project on team Turboclock. This repo represents code snippits I've contributed towards the project.
+TurboEngine is a custom game engine our team Turboclock is working on. Its developed in UWP/WinRT C++ and targets the Windows10 and XboxOne platforms. The main gameplay is that players can create levels (similar to Halo's forge) and then play as a Tank fighting against either friends over the network, or ai tanks. My main contribution is to this project is gameplay systems and the AI.
+
+This repo represents code snippits I've contributed towards the project, specifically some of the Tank combat behaviors. 
 This project is currently under development. As a result, this snippet is from a previous milestone our team reached. Expect this repository to update as the project develops. 
 
 **AISystem.cpp**
