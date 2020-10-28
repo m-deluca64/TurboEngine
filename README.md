@@ -13,4 +13,4 @@ This repo contains a few snippets of code:
 	- A highlight of the EnvironmentQuerySystem I implemented for this project. This file is bigger than the others, it features
 		- EnvironmentQuery base class used to construct tests 
 		- OtherTankDotTest class which is an example of an implemented test
-		- QuerySet::score which implements a optimized procedure of score a list of tests against a list of points
+		- QuerySet::score which implements a optimized procedure of scoring a list of tests against a list of points
