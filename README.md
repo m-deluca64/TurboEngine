@@ -5,12 +5,16 @@ The main gameplay is that players can create levels (similar to Halo's forge) an
 This repo contains a few snippets of code:
 - ai-system.cpp
 	- the tick() function which processes the data-driven behavior trees for each agent
+
+- QuerySet.cpp
+    - my implementation of an Environment Query System (or tactical point analysis) 
+	- this file mainly features a score() function which is optimized to perform cheap tests iteratively
+
+- QueryTest.cpp
+	- this holds the class definition & an example implementation for Tests used to create full queries in my EQS. 
+
 - CanSeeTank.cpp
 	- a decorator node that acts as a tank's main sight/perception for the world
+	
 - MoveTo.cpp
 	- a behavior node that simply steers a tank towards a point respective of its orientation
-- EnvironmentQuery.cpp
-	- A highlight of the EnvironmentQuerySystem I implemented for this project. This file is bigger than the others, it features
-		- EnvironmentQuery base class used to construct tests 
-		- OtherTankDotTest class which is an example of an implemented test
-		- QuerySet::score which implements a optimized procedure of scoring a list of tests against a list of points
