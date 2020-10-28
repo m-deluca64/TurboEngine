@@ -9,7 +9,7 @@ This repo contains a few snippets of code:
 	- a decorator node that acts as a tank's main sight/perception for the world
 - MoveTo.cpp
 	- a behavior node that simply steers a tank towards a point respective of its orientation
--EnvironmentQuery.cpp
+- EnvironmentQuery.cpp
 	- A highlight of the EnvironmentQuerySystem I implemented for this project. This file is bigger than the others, it features
 		- EnvironmentQuery base class used to construct tests 
 		- OtherTankDotTest class which is an example of an implemented test
